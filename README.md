@@ -2,18 +2,17 @@
 
 > **Ask your data anything — in plain English.**
 
-Talk2Data AI is a full-stack AI-powered data analytics tool that converts natural language questions into SQL queries, executes them on your database, and presents results with visualizations and plain-English explanations — all powered by Google Gemini AI.
+Talk2Data AI is a full-stack AI-powered data analytics tool that converts natural language questions into SQL queries, executes them on your database, and presents results with visualizations — powered by fast open-source LLMs via Groq.
 
 ---
 
 ## ✨ Features
 
-- 🗣️ **Natural Language to SQL** — Type a question; get a valid SQL query back instantly
-- 🤖 **Gemini AI Powered** — Uses Google's `gemini-1.5-flash` model for fast, accurate SQL generation
+- 🗣️ **Natural Language to SQL** — Type a question; get a valid SQL query instantly
+- ⚡ **Groq AI Powered** — Uses LLaMA 3.1 models for fast SQL generation
 - 📊 **Data Visualizations** — Results rendered as interactive charts and tables
 - 🛡️ **Safety First** — Blocks dangerous queries (INSERT, UPDATE, DELETE, DROP); only SELECT allowed
-- 📈 **Confidence Scoring** — AI rates its own confidence; low-confidence results are filtered out
-- 💡 **Plain-English Explanations** — Every query result comes with a human-readable explanation
+- 💡 **Schema-Aware SQL Generation** — AI strictly uses your database schema
 - 🔌 **Multi-Database Support** — Works with SQLite, PostgreSQL, and MySQL via SQLAlchemy
 
 ---
@@ -24,7 +23,7 @@ Talk2Data AI is a full-stack AI-powered data analytics tool that converts natura
 |-------|-----------|
 | **Frontend** | Next.js 14, TypeScript, CSS |
 | **Backend** | FastAPI (Python), Uvicorn |
-| **AI** | Google Gemini AI (`google-genai`) |
+| **AI** | Groq (`llama-3.1-8b-instant`) |
 | **Database ORM** | SQLAlchemy |
 | **Database** | SQLite (default) / PostgreSQL / MySQL |
 
@@ -35,29 +34,28 @@ Talk2Data AI is a full-stack AI-powered data analytics tool that converts natura
 ```
 talk2data/
 ├── backend/
-│   ├── main.py               # FastAPI app entry point
-│   ├── requirements.txt      # Python dependencies
-│   ├── setup_db.py           # Database setup script
-│   ├── .env.example          # Environment variables template
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── setup_db.py
+│   ├── .env.example
 │   ├── routers/
-│   │   ├── query.py          # POST /api/query endpoint
-│   │   └── schema.py         # GET /api/schema endpoint
+│   │   ├── query.py
+│   │   └── schema.py
 │   ├── services/
-│   │   ├── gemini_service.py # Gemini AI integration
-│   │   └── db_service.py     # Database operations
+│   │   ├── gemini_service.py   
+│   │   └── db_service.py
 │   └── models/
-│       └── schemas.py        # Pydantic request/response models
+│       └── schemas.py
 └── frontend/
     ├── app/
-    │   ├── page.tsx          # Main application page
-    │   ├── layout.tsx        # Root layout
-    │   └── globals.css       # Global styles
+    │   ├── page.tsx
+    │   ├── layout.tsx
+    │   └── globals.css
     └── components/
-        ├── QueryInput.tsx    # Natural language input component
-        ├── ResultsPanel.tsx  # Results display panel
-        ├── SqlDisplay.tsx    # SQL query viewer
-        ├── Chart.tsx         # Data visualization chart
-        └── ConfidenceScore.tsx # AI confidence indicator
+        ├── QueryInput.tsx
+        ├── ResultsPanel.tsx
+        ├── SqlDisplay.tsx
+        ├── Chart.tsx
 ```
 
 ---
@@ -66,9 +64,9 @@ talk2data/
 
 ### Prerequisites
 
-- **Python** 3.10+
-- **Node.js** 18+
-- A **Gemini API key** → [Get one free at Google AI Studio](https://aistudio.google.com/)
+- Python 3.10+
+- Node.js 18+
+- A Groq API key → https://console.groq.com/
 
 ---
 
@@ -86,33 +84,39 @@ cd talk2data
 ```bash
 cd backend
 
-# Install Python dependencies
 pip install -r requirements.txt
 
-# Configure environment variables
-copy .env.example .env
+# create env file
+cp .env.example .env
 ```
 
-Edit `.env` with your credentials:
+Edit `.env`:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 DATABASE_URL=sqlite:///./talk2data.db
 ```
 
-> For PostgreSQL: `DATABASE_URL=postgresql://user:password@localhost:5432/talk2data`
-> For MySQL: `DATABASE_URL=mysql+pymysql://user:password@localhost:3306/talk2data`
+> PostgreSQL:
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/talk2data
+```
+
+> MySQL:
+```
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/talk2data
+```
 
 ```bash
-# (Optional) Seed the database with sample data
+# Optional: seed database
 python setup_db.py
 
-# Start the backend server
+# Run backend
 uvicorn main:app --reload
 ```
 
-Backend runs at: **http://localhost:8000**
-Interactive API docs: **http://localhost:8000/docs**
+Backend: http://localhost:8000  
+Docs: http://localhost:8000/docs  
 
 ---
 
@@ -121,17 +125,14 @@ Interactive API docs: **http://localhost:8000/docs**
 ```bash
 cd frontend
 
-# Install dependencies
 npm install
 
-# Configure environment variables
 echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 
-# Start the development server
 npm run dev
 ```
 
-Frontend runs at: **http://localhost:3000**
+Frontend: http://localhost:3000  
 
 ---
 
@@ -139,12 +140,12 @@ Frontend runs at: **http://localhost:3000**
 
 ### `POST /api/query`
 
-Convert a natural language question to SQL and execute it.
+Convert natural language → SQL → execute.
 
-**Request Body:**
+**Request:**
 ```json
 {
-  "question": "What are the top 5 customers by total orders?",
+  "question": "Show all sales",
   "confidence_threshold": 0.4
 }
 ```
@@ -152,46 +153,55 @@ Convert a natural language question to SQL and execute it.
 **Response:**
 ```json
 {
-  "question": "What are the top 5 customers by total orders?",
-  "sql": "SELECT customer_name, COUNT(*) as total_orders FROM orders GROUP BY customer_name ORDER BY total_orders DESC LIMIT 5",
-  "explanation": "This query counts the number of orders per customer and returns the top 5 with the most orders.",
-  "confidence": 0.92,
-  "columns": ["customer_name", "total_orders"],
+  "question": "...",
+  "sql": "SELECT * FROM sales",
+  "explanation": "Generated by AI",
+  "confidence": 1.0,
+  "columns": [...],
   "results": [...],
-  "row_count": 5
+  "row_count": 10
 }
 ```
 
+---
+
 ### `GET /api/schema`
 
-Returns the connected database schema (tables and columns).
+Returns database schema.
 
 ---
 
 ## 🔒 Security
 
-- Only **SELECT** statements are allowed to run — all DDL and DML are blocked
-- Queries returning a confidence score below the threshold are rejected
-- API keys are managed via `.env` files (never committed to version control)
+- Only **SELECT** queries allowed  
+- SQL validated before execution  
+- API keys stored in `.env`  
+
+---
+
+## ⚠️ Notes
+
+- AI may generate incorrect SQL for complex queries  
+- Simpler queries = better accuracy  
+- Prompt is optimized to reduce hallucinations  
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
+1. Fork repo  
+2. Create branch  
+3. Commit changes  
+4. Push & open PR  
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT License
 
 ---
 
 <div align="center">
-  Built with ❤️ · Powered by Gemini AI · Made for data accessibility
+Built with ❤️ · Powered by Groq · Fast AI for Data 🚀
 </div>

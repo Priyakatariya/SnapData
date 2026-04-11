@@ -1,58 +1,44 @@
+from groq import Groq
 import os
-import json
-from google import genai
 from dotenv import load_dotenv
 
+# Load env variables
 load_dotenv()
 
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
-def build_prompt(question: str, schema: str) -> str:
-    return f"""
-You are an expert SQL assistant for a data analytics tool called Talk2Data AI.
+def generate_sql(prompt, schema):
+    full_prompt = f"""
+You are a SQL expert.
 
-Given the following database schema:
+STRICT RULES:
+- Use ONLY tables and columns from the schema below
+- DO NOT invent column names
+- DO NOT guess relationships
+- Use simple queries when possible
+- Avoid subqueries unless necessary
+- If unsure, return a basic SELECT query
+
+Database schema:
 {schema}
 
-Convert this natural language question into a valid SQL query:
-"{question}"
+User question:
+{prompt}
 
-Rules:
-- Only return SELECT statements. Never return INSERT, UPDATE, DELETE, DROP, or DDL.
-- Use proper SQL syntax compatible with SQLite.
-- Do not use markdown code blocks in the SQL output.
-- Return a JSON object with exactly these fields:
-  {{
-    "sql": "<the SQL query>",
-    "explanation": "<one paragraph plain-english explanation of what the query does and what the result means>",
-    "confidence": <a float between 0.0 and 1.0 representing your confidence this SQL answers the question correctly>
-  }}
+Return ONLY valid SQL query. No explanation.
 """
 
-
-async def generate_sql(question: str, schema: str) -> dict:
-    """
-    Calls Gemini API to convert a natural language question into SQL.
-    Returns dict with keys: sql, explanation, confidence
-    """
-    prompt = build_prompt(question, schema)
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=prompt,
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are a SQL expert."},
+            {"role": "user", "content": full_prompt}
+        ]
     )
-    raw = response.text.strip()
 
-    # Strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
+    sql = response.choices[0].message.content.strip()
 
-    parsed = json.loads(raw.strip())
+    print("Generated SQL:", sql)  # 🔍 Debug
 
-    return {
-        "sql": parsed.get("sql", ""),
-        "explanation": parsed.get("explanation", ""),
-        "confidence": float(parsed.get("confidence", 0.5)),
-    }
+    return sql

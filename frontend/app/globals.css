@@ -417,7 +417,7 @@ html, body {
 /* ===== Error ===== */
 .error-card {
   background: var(--danger-bg);
-  border: 1px solid rgba(250, 82, 82, 0.3);
+  border: 1px solid rgba(251, 82, 82, 0.3);
   border-radius: var(--radius);
   padding: 16px 20px;
   color: var(--danger);

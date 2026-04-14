@@ -1,8 +1,8 @@
-# 🧠 Talk2Data AI
+# 🧠 SnapData
 
 > **Ask your data anything — in plain English.**
 
-Talk2Data AI is a full-stack AI-powered data analytics tool that converts natural language questions into SQL queries, executes them on your database, and presents results with visualizations — powered by fast open-source LLMs via Groq.
+SnapData is a full-stack AI-powered data analytics tool that converts natural language questions into SQL queries, executes them on your database, and presents results with visualizations — powered by fast open-source LLMs via Groq.
 
 ---
 
